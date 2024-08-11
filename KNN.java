@@ -1,83 +1,73 @@
-
 import java.util.*;
+
 public class KNN {
-   
-public static void main(String args[])
-{
-}
+    
+    public static void main(String[] args) {
+        double[][] xT = {
+            {1, 2}, {2, 3}, {3, 4}, {6, 5}, {7, 8}
+        };
+        double[] yT = {0, 0, 0, 1, 1};
+        
+        double[][] xTest = {
+            {2, 2}, {4, 4}, {5, 5}, {6, 7}, {7, 9}
+        };
+        double[] yTest = {0, 0, 1, 1, 1};
+        
+        int k = 3;
 
-public double euclidean_Distance(double[] x1, double[] x2)
-{
-    double distance = 0;
-
-    for(int i = 0; i < x1.length; i++)
-    {
-        distance += Math.pow(x1[i] - x2[i], 2);
+        KNN knn=new KNN();
+        double[] yP=knn.pred(xT,yT,xTest,k);
+        double acc=knn.calcAcc(yTest,yP);
+        System.out.println("Acc:"+acc);
     }
 
-    return distance;
-}
-
-public double manhattan_Distance(double[] x1, double[] x2)
-{
-    double distance = 0;
-
-    for(int i = 0; i < x1.length; i++)
-    {
-        distance += Math.abs(x1[i] - x2[i]);
+    public double eucDist(double[] x1,double[] x2){
+        double dist=0;
+        for(int i=0;i<x1.length;i++){
+            dist+=Math.pow(x1[i]-x2[i],2);
+        }
+        return Math.sqrt(dist);
     }
 
-    return distance;
-}
-
-public double[] get_neighboring_k_els(double[] x_train,double[] y_train,double[] x_test,int k)
-{
-    double[] distances = new double[x_train.length];
-    for(int i = 0; i < x_train.length; i++)
-    {
-        distances[i] = euclidean_Distance(x_train, x_test);
+    public double[] getNeigh(double[][] xT,double[] yT,double[] xTest,int k){
+        double[][] distArr=new double[xT.length][2];
+        for(int i=0;i<xT.length;i++){
+            distArr[i][0]=eucDist(xT[i],xTest);
+            distArr[i][1]=yT[i];
+        }
+        Arrays.sort(distArr,Comparator.comparingDouble(a->a[0]));
+        
+        double[] neigh=new double[k];
+        for(int i=0;i<k;i++){
+            neigh[i]=distArr[i][1];
+        }
+        return neigh;
     }
-    return distances;
-}
 
-public double get_most_common(double[] arr)
-{
-    double max = 0;
-    double most_common = 0;
-    for(int i = 0; i < arr.length; i++)
-    {
-        int count = 0;
-        for(int j = 0; j < arr.length; j++)
-        {
-            if(arr[i] == arr[j])
-            {
-                count++;
+    public double mostComm(double[] arr){
+        Map<Double,Integer> freqMap=new HashMap<>();
+        for(double v:arr){
+            freqMap.put(v,freqMap.getOrDefault(v,0)+1);
+        }
+        return Collections.max(freqMap.entrySet(),Map.Entry.comparingByValue()).getKey();
+    }
+
+    public double[] pred(double[][] xT,double[] yT,double[][] xTest,int k){
+        double[] yP=new double[xTest.length];
+        for(int i=0;i<xTest.length;i++){
+            double[] neigh=getNeigh(xT,yT,xTest[i],k);
+            yP[i]=mostComm(neigh);
+        }
+        return yP;
+    }
+
+    public double calcAcc(double[] yTest,double[] yP){
+        int corr=0;
+        for(int i=0;i<yTest.length;i++){
+            if(yTest[i]==yP[i]){
+                corr++;
             }
         }
-        if(count > max)
-        {
-            max = count;
-            most_common = arr[i];
-        }
+        return (double)corr/yTest.length;
     }
-    return most_common;
-}
-public double[] predict_clasification(double[] x_train,double[] y_train, double x_test, int k)
-{
-    double[] predictions = new double[x_train.length];
-    for(int i = 0; i < x_train.length; i++)
-    {
-        double[] distances = get_neighboring_k_els(x_train, y_train, x_test, k);
-        double[] sorted_distances = distances;
-        Arrays.sort(sorted_distances);
-        double[] k_nearest = Arrays.copyOfRange(sorted_distances, 0, k);
-        double[] k_nearest_labels = new double[k];
-        for(int j = 0; j < k; j++)
-        {
-            k_nearest_labels[j] = y_train[distances.indexOf(k_nearest[j])];
-        }
-        predictions[i] = get_most_common(k_nearest_labels);
-    }
-}
-
 }
